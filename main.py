@@ -30,7 +30,7 @@ def get_config(filename="config.json"):
             }))
             sys.exit("Please fill config.json and relaunch the application.")
 
-def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
+def build_app(Bot_API_Key, Bot_Signing_Secret):
     app = App(
             token=Bot_API_Key,
             signing_secret=Bot_Signing_Secret,
@@ -38,6 +38,7 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
     @app.command("/spell")
     def spam_user(ack, respond, command):
         ack()
+        cfg = get_config()
         user_slack_id = command.get("text").strip(' ') or "None"
         if user_slack_id == "help":
             respond("So the rundown is you use `/spell <user_slack_id>` and it sends a bunch of messages to the user pretty much it to learn how to configure use `/spset help`!")
@@ -59,6 +60,7 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                         text=random.choice(cfg["Spam_Bot_Phrases"])
                     )
                     message_number += 1
+                    time.sleep(cfg["Delay_Seconds"]/len(cfg["Spam_Bot_API_Keys"]))
                 except SlackApiError as e:
                     respond(f"Oops! Ran into an issue... {e}")
             respond(f"{message_number} messages have been sent to {user_slack_id} to hehehe with {len(cfg['Spam_Bot_API_Keys'])} bots!")
@@ -67,6 +69,8 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
 
     @app.command("/spset")
     def spset_user(ack, respond, command):
+        ack()
+        cfg = get_config()
         user_input = command.get("text").strip(' ').split(' ') or "None"
         if command["channel_id"] in cfg["Allowed_Channels"]:
             if user_input == "None":
@@ -116,6 +120,46 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                     return
                 cfg["Allowed_Channels"].remove(user_input[1])
                 respond("Removed successfully :)")
+            elif user_input[1] == "list":
+                message = "*ALLOWED CHANNELS*\n"
+                for channel in cfg["Allowed_Channels"]:
+                    message += f"{channel}\n"
+                message += "~That's all~"
+                respond(message)
+            else:
+                respond("Soo yeah... Invalid arguments :/")
+        elif user_input[0] == "spam_api_keys":
+            if not len(user_input) == 3:
+                respond("Hey.. So you either added too many or too few params :/ please view `/spset help spam_api_keys` for instructions!")
+                return
+            if user_input[1] == "add":
+                if user_input[2] in cfg["Spam_Bot_API_Keys"]:
+                    respond("Hey.. so That bot is already in the legion...")
+                    return
+                cfg["Slack_Bot_API_Keys"].append(user_input[2])
+                save_config(cfg=cfg)
+                respond("Added successfully :D")
+            elif user_input[1] == "remove":
+                if not user_input[2] in cfg["Spam_Bot_API_Keys"]:
+                    respond("Hey so yeah... You're trying to remove a bot that isn't in the legion...")
+                    return
+                cfg["Slack_Bot_API_Keys"].remove(user_input[2])
+                save_config(cfg=cfg)
+                respond("Removed successfully :)")
+            elif user_input[1] == "list":
+                respond("sorry ye i'm not leaking my keys :/")
+            else:
+                respond("Sorry invalid arguments :( Please use `/spset help spam_api_keys` for instructions!")
+        elif user_input[0] == "set_delay":
+            if not len(user_input) == 2:
+                respond("Too many or too few arguments :/ Please use `/spset help set_delay` for instructions!")
+                return
+            cfg["Delay_Seconds"] = user_input[1]
+            save_config(cfg=cfg)
+            respond(f"Delay seconds has been set to {user_input[1]}!")
+        elif user_input[0] == "phrases":
+            respond("Ye i dont feel like doing this rn sorry lol")
+
 
 
 
