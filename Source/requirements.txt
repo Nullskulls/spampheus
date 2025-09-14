@@ -1,2 +1,0 @@
-slack-bolt[socket-mode]
-slack-sdk
