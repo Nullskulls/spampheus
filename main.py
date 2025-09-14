@@ -89,82 +89,78 @@ def build_app(Bot_API_Key, Bot_Signing_Secret):
                     respond("Three options again... add, remove or list usage as such `/spset phrases <add/remove/list> <phrase>` this is used to add or remove possible things sent! the phrase parameter is optional when listing btw!")
                 elif user_input[1] == "set_delay":
                     respond("Pretty self explanatory usage as such `/spset set_delay <delay in seconds>`")
+                else:
+                    respond("Yeah sorry... Invalid arguments :/")
                 return
-            else:
-                respond("Yeah sorry... Invalid arguments :/")
-        elif user_input[0] == "max":
-            if len(user_input) == 2:
-                cfg["Max_Messages"] = user_input[1]
-                save_config(cfg=cfg)
-                respond(f"Max Messages has been set to {user_input[1]}")
-            else:
-                respond("Hey! It looks like you passed in too many or too few arguments :( To learn more please use `/spset help max`")
-                return
-        elif user_input[0] == "channels":
-            if user_input[1] == "add":
+            elif user_input[0] == "max":
+                if len(user_input) == 2:
+                    cfg["Max_Messages"] = user_input[1]
+                    save_config(cfg=cfg)
+                    respond(f"Max Messages has been set to {user_input[1]}")
+                else:
+                    respond("Hey! It looks like you passed in too many or too few arguments :( To learn more please use `/spset help max`")
+                    return
+            elif user_input[0] == "channels":
+                if user_input[1] == "add":
+                    if not len(user_input) == 3:
+                        respond("So it looks like you passed in too many or too few params :/ Please use `/spset help channels` for instructions!")
+                        return
+                    if user_input[1] in cfg["Allowed_Channels"]:
+                        respond("Hey... So that channel is already white listed :)")
+                        return
+                    cfg["Allowed_Channels"].append(user_input[2])
+                    save_config(cfg=cfg)
+                    return
+                elif user_input[1] == "remove":
+                    if not len(user_input) == 3:
+                        respond("Hey so it looks like you passed in too little or too few params :/ Please use `/spset help channels` for instructions!")
+                        return
+                    if not user_input[1] in cfg["Allowed_Channels"]:
+                        respond("Okay so you're currently trying to remove a channel not even in the white list :(")
+                        return
+                    cfg["Allowed_Channels"].remove(user_input[1])
+                    respond("Removed successfully :)")
+                elif user_input[1] == "list":
+                    message = "*ALLOWED CHANNELS*\n"
+                    for channel in cfg["Allowed_Channels"]:
+                        message += f"{channel}\n"
+                    message += "~That's all~"
+                    respond(message)
+                else:
+                    respond("Soo yeah... Invalid arguments :/")
+            elif user_input[0] == "spam_api_keys":
                 if not len(user_input) == 3:
-                    respond("So it looks like you passed in too many or too few params :/ Please use `/spset help channels` for instructions!")
+                    respond("Hey.. So you either added too many or too few params :/ please view `/spset help spam_api_keys` for instructions!")
                     return
-                if user_input[1] in cfg["Allowed_Channels"]:
-                    respond("Hey... So that channel is already white listed :)")
+                if user_input[1] == "add":
+                    if user_input[2] in cfg["Spam_Bot_API_Keys"]:
+                        respond("Hey.. so That bot is already in the legion...")
+                        return
+                    cfg["Slack_Bot_API_Keys"].append(user_input[2])
+                    save_config(cfg=cfg)
+                    respond("Added successfully :D")
+                elif user_input[1] == "remove":
+                    if not user_input[2] in cfg["Spam_Bot_API_Keys"]:
+                        respond("Hey so yeah... You're trying to remove a bot that isn't in the legion...")
+                        return
+                    cfg["Slack_Bot_API_Keys"].remove(user_input[2])
+                    save_config(cfg=cfg)
+                    respond("Removed successfully :)")
+                elif user_input[1] == "list":
+                    respond("sorry ye i'm not leaking my keys :/")
+                else:
+                    respond("Sorry invalid arguments :( Please use `/spset help spam_api_keys` for instructions!")
+            elif user_input[0] == "set_delay":
+                if not len(user_input) == 2:
+                    respond("Too many or too few arguments :/ Please use `/spset help set_delay` for instructions!")
                     return
-                cfg["Allowed_Channels"].append(user_input[2])
+                cfg["Delay_Seconds"] = user_input[1]
                 save_config(cfg=cfg)
-                return
-            elif user_input[1] == "remove":
-                if not len(user_input) == 3:
-                    respond("Hey so it looks like you passed in too little or too few params :/ Please use `/spset help channels` for instructions!")
-                    return
-                if not user_input[1] in cfg["Allowed_Channels"]:
-                    respond("Okay so you're currently trying to remove a channel not even in the white list :(")
-                    return
-                cfg["Allowed_Channels"].remove(user_input[1])
-                respond("Removed successfully :)")
-            elif user_input[1] == "list":
-                message = "*ALLOWED CHANNELS*\n"
-                for channel in cfg["Allowed_Channels"]:
-                    message += f"{channel}\n"
-                message += "~That's all~"
-                respond(message)
+                respond(f"Delay seconds has been set to {user_input[1]}!")
+            elif user_input[0] == "phrases":
+                respond("Ye i dont feel like doing this rn sorry lol")
             else:
-                respond("Soo yeah... Invalid arguments :/")
-        elif user_input[0] == "spam_api_keys":
-            if not len(user_input) == 3:
-                respond("Hey.. So you either added too many or too few params :/ please view `/spset help spam_api_keys` for instructions!")
-                return
-            if user_input[1] == "add":
-                if user_input[2] in cfg["Spam_Bot_API_Keys"]:
-                    respond("Hey.. so That bot is already in the legion...")
-                    return
-                cfg["Slack_Bot_API_Keys"].append(user_input[2])
-                save_config(cfg=cfg)
-                respond("Added successfully :D")
-            elif user_input[1] == "remove":
-                if not user_input[2] in cfg["Spam_Bot_API_Keys"]:
-                    respond("Hey so yeah... You're trying to remove a bot that isn't in the legion...")
-                    return
-                cfg["Slack_Bot_API_Keys"].remove(user_input[2])
-                save_config(cfg=cfg)
-                respond("Removed successfully :)")
-            elif user_input[1] == "list":
-                respond("sorry ye i'm not leaking my keys :/")
-            else:
-                respond("Sorry invalid arguments :( Please use `/spset help spam_api_keys` for instructions!")
-        elif user_input[0] == "set_delay":
-            if not len(user_input) == 2:
-                respond("Too many or too few arguments :/ Please use `/spset help set_delay` for instructions!")
-                return
-            cfg["Delay_Seconds"] = user_input[1]
-            save_config(cfg=cfg)
-            respond(f"Delay seconds has been set to {user_input[1]}!")
-        elif user_input[0] == "phrases":
-            respond("Ye i dont feel like doing this rn sorry lol")
-
-
-
-
-
-
+                respond("Invalid arguments :/ please use `/spset help` for instructions!")
         else:
             respond("Hey! yeah sorry you're not allowed to do that.. :(")
 
