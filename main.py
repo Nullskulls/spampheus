@@ -4,6 +4,14 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 import json, sys, random, time
 
+def save_config(filename="config.json", cfg={}):
+    if not cfg:
+        sys.exit("Hey! It looks like cfg somehow got corrupted? try restarting if that doesn't work delete the config.json file and restart the bot!")
+    try:
+        with open(filename, 'w') as file:
+            file.write(json.dumps(cfg, indent=1))
+    except Exception as e:
+        sys.exit(f"Error occurred whilst saving config file, Please restart the bot if the error occurs please raise a github issue, ERROR: {e}")
 
 def get_config(filename="config.json"):
     try:
@@ -53,6 +61,7 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                     message_number += 1
                 except SlackApiError as e:
                     respond(f"Oops! Ran into an issue... {e}")
+            respond(f"{message_number} messages have been sent to {user_slack_id} to hehehe with {len(cfg['Spam_Bot_API_Keys'])} bots!")
         else:
             respond("Hey! Looks like this isn't a valid channel to use this :(")
 
@@ -69,16 +78,49 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                 if user_input[1] == "max":
                     respond("This command is used to set the maximum amount of messages to be sent. usage is `/spset max <number>`.")
                 elif user_input[1] == "channels":
-                    respond("Okay so you've got 2 options add or remove simple enough eh? works via `spset channels <add/remove> <channel_id>` this is used to configure the channel whitelist!")
+                    respond("Okay so you've got 3 options add or remove simple enough eh? works via `spset channels <add/remove/list> <channel_id>` this is used to configure the channel whitelist! channel id is optional when listing btw!")
                 elif user_input[1] == "spam_api_keys":
                     respond("So.. 2 options add or remove simple enough eh? works via `/spset spam_api_keys <add/remove> <api_key>` This is used to manage the spam bots keys!")
                 elif user_input[1] == "phrases":
-                    respond("Three options again... add, remove or list usage as such `/spset phrases <add/remove/list> <phrase>` this is used to add or remove possible things sent!")
+                    respond("Three options again... add, remove or list usage as such `/spset phrases <add/remove/list> <phrase>` this is used to add or remove possible things sent! the phrase parameter is optional when listing btw!")
                 elif user_input[1] == "set_delay":
                     respond("Pretty self explanatory usage as such `/spset set_delay <delay in seconds>`")
                 return
             else:
                 respond("Yeah sorry... Invalid arguments :/")
+        elif user_input[0] == "max":
+            if len(user_input) == 2:
+                cfg["Max_Messages"] = user_input[1]
+                save_config(cfg=cfg)
+                respond(f"Max Messages has been set to {user_input[1]}")
+            else:
+                respond("Hey! It looks like you passed in too many or too few arguments :( To learn more please use `/spset help max`")
+                return
+        elif user_input[0] == "channels":
+            if user_input[1] == "add":
+                if not len(user_input) == 3:
+                    respond("So it looks like you passed in too many or too few params :/ Please use `/spset help channels` for instructions!")
+                    return
+                if user_input[1] in cfg["Allowed_Channels"]:
+                    respond("Hey... So that channel is already white listed :)")
+                    return
+                cfg["Allowed_Channels"].append(user_input[2])
+                save_config(cfg=cfg)
+                return
+            elif user_input[1] == "remove":
+                if not len(user_input) == 3:
+                    respond("Hey so it looks like you passed in too little or too few params :/ Please use `/spset help channels` for instructions!")
+                    return
+                if not user_input[1] in cfg["Allowed_Channels"]:
+                    respond("Okay so you're currently trying to remove a channel not even in the white list :(")
+                    return
+                cfg["Allowed_Channels"].remove(user_input[1])
+                respond("Removed successfully :)")
+
+
+
+
+
         else:
             respond("Hey! yeah sorry you're not allowed to do that.. :(")
 
