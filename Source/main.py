@@ -24,6 +24,7 @@ def get_config(filename="config.json"):
                 "Spam_Bot_API_Keys": [""],
                 "Bot_API_Key": "",
                 "Bot_Signing_Secret": "",
+                "Socket_ID": "",
                 "Allowed_Channels": [],
                 "Spam_Phrases": ["I like cats!", "I really love cats", "Cats are the best!", "Cats rule!", "Cats are purrfect!"],
                 "Delay_Seconds": 1,
@@ -168,3 +169,5 @@ def build_app(Bot_API_Key, Bot_Signing_Secret):
 if __name__ == "__main__":
     cfg = get_config()
     app = build_app(cfg["Bot_API_Key"], cfg["Bot_Signing_Secret"], cfg)
+    handler = SocketModeHandler(app, cfg["Socket_ID"])
+    handler.start()
