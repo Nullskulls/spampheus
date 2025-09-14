@@ -16,11 +16,11 @@ def save_config(filename="config.json", cfg={}):
 def get_config(filename="config.json"):
     try:
         with open(filename, 'r') as file:
-            return json.loads(file.read())
+            return json.load(file)
     except FileNotFoundError:
         with open(filename, 'w') as file:
             file.write(json.dumps({
-                "Max_Messages": 20,
+                "Max_Messages": 15,
                 "Spam_Bot_API_Keys": [""],
                 "Bot_API_Key": "",
                 "Bot_Signing_Secret": "",
@@ -28,10 +28,12 @@ def get_config(filename="config.json"):
                 "Allowed_Channels": [],
                 "Spam_Phrases": ["I like cats!", "I really love cats", "Cats are the best!", "Cats rule!", "Cats are purrfect!"],
                 "Delay_Seconds": 1,
+                "Debugging": "False",
             }))
             sys.exit("Please fill config.json and relaunch the application.")
 
-def build_app(Bot_API_Key, Bot_Signing_Secret):
+
+def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
     app = App(
             token=Bot_API_Key,
             signing_secret=Bot_Signing_Secret,
@@ -40,6 +42,8 @@ def build_app(Bot_API_Key, Bot_Signing_Secret):
     def spam_user(ack, respond, command):
         ack()
         cfg = get_config()
+        if cfg["Debugging"] == "True":
+            respond("Hey there! Since this is in a public channel i set the wait between each message to 6 seconds, no you can't change it.")
         user_slack_id = command.get("text").strip(' ') or "None"
         if user_slack_id == "help":
             respond("So the rundown is you use `/spell <user_slack_id>` and it sends a bunch of messages to the user pretty much it to learn how to configure use `/spset help`!")
@@ -53,17 +57,21 @@ def build_app(Bot_API_Key, Bot_Signing_Secret):
                 respond("Whoopsie! Looks like you didn't specify any bot API keys you silly billy :(")
                 return
             message_number = 0 #used to track how many sent
-            for api_key in cfg["Spam_Bot_API_Keys"]:
-                client = WebClient(token=api_key)
-                try:
-                    client.chat_postMessage(
-                        channel=user_slack_id,
-                        text=random.choice(cfg["Spam_Bot_Phrases"])
-                    )
-                    message_number += 1
-                    time.sleep(cfg["Delay_Seconds"]/len(cfg["Spam_Bot_API_Keys"]))
-                except SlackApiError as e:
-                    respond(f"Oops! Ran into an issue... {e}")
+            while True:
+                for api_key in cfg["Spam_Bot_API_Keys"]:
+                    client = WebClient(token=api_key)
+                    try:
+                        client.chat_postMessage(
+                            channel=user_slack_id,
+                            text=random.choice(cfg["Spam_Phrases"])
+                        )
+                        message_number += 1
+                        time.sleep(cfg["Delay_Seconds"]/len(cfg["Spam_Bot_API_Keys"]))
+                    except SlackApiError as e:
+                        respond(f"Oops! Ran into an issue... {e}")
+                    if message_number >= cfg["Max_Messages"]:
+                        break
+                break
             respond(f"{message_number} messages have been sent to {user_slack_id} to hehehe with {len(cfg['Spam_Bot_API_Keys'])} bots!")
         else:
             respond("Hey! Looks like this isn't a valid channel to use this :(")
@@ -72,14 +80,17 @@ def build_app(Bot_API_Key, Bot_Signing_Secret):
     def spset_user(ack, respond, command):
         ack()
         cfg = get_config()
+        if cfg["Debugging"] == "True":
+            respond("Hey there! Since this is in a public channel i blocked this command sorry...")
+            return
         user_input = command.get("text").strip(' ').split(' ') or "None"
         if command["channel_id"] in cfg["Allowed_Channels"]:
             if user_input == "None":
                 respond("Whoopse you forgot to enter an argument! Please use `/spset help` to learn valid commands.")
                 return
-            if user_input == "help"[0] and len(user_input) == 1:
+            if user_input[0] == "help" and len(user_input) == 1:
                 respond("Okay so far there are a few arguments available... `max, channels, phrases, spam_api_keys, set_delay` to learn more specify which in the help command!")
-            elif user_input == "help" and len(user_input) == 2:
+            elif user_input[0] == "help" and len(user_input) == 2:
                 if user_input[1] == "max":
                     respond("This command is used to set the maximum amount of messages to be sent. usage is `/spset max <number>`.")
                 elif user_input[1] == "channels":
@@ -164,6 +175,7 @@ def build_app(Bot_API_Key, Bot_Signing_Secret):
                 respond("Invalid arguments :/ please use `/spset help` for instructions!")
         else:
             respond("Hey! yeah sorry you're not allowed to do that.. :(")
+    return app
 
 
 if __name__ == "__main__":
