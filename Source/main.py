@@ -4,6 +4,8 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 import json, sys, random, time
 
+users = []
+
 def save_config(filename="config.json", cfg={}):
     if not cfg:
         sys.exit("Hey! It looks like cfg somehow got corrupted? try restarting if that doesn't work delete the config.json file and restart the bot!")
@@ -29,6 +31,7 @@ def get_config(filename="config.json"):
                 "Spam_Phrases": ["I like cats!", "I really love cats", "Cats are the best!", "Cats rule!", "Cats are purrfect!"],
                 "Delay_Seconds": 1,
                 "Debugging": "False",
+                "Multi_Instance": "True"
             }))
             sys.exit("Please fill config.json and relaunch the application.")
 
@@ -57,6 +60,12 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                 respond("Whoopsie! Looks like you didn't specify any bot API keys you silly billy :(")
                 return
             message_number = 0 #used to track how many sent
+            if cfg["Multi_Instance"] == "False":
+                if command["user_id"] in users:
+                    respond("Hey looks like your last spam instance isn't over.. Please wait!")
+                    return
+                else:
+                    users.append(command["user_id"])
             while True:
                 for api_key in cfg["Spam_Bot_API_Keys"]:
                     client = WebClient(token=api_key)
@@ -73,6 +82,8 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                         break
                 break
             respond(f"{message_number} messages have been sent to {user_slack_id} to hehehe with {len(cfg['Spam_Bot_API_Keys'])} bots!")
+            if command["user_id"] in users:
+                users.remove(command["user_id"])
         else:
             respond("Hey! Looks like this isn't a valid channel to use this :(")
 
