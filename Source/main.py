@@ -39,11 +39,11 @@ def get_config(filename="config.json"):
 
 def save_log(log_to_save):
     try:
-        with open(log_to_save, 'a') as file:
+        with open("logs.txt", 'a') as file:
             file.write(f"| {log_to_save} |\n")
             return True, "ok"
     except FileNotFoundError:
-        with open(log_to_save, 'w') as file:
+        with open("logs.txt", 'w') as file:
             file.write(f"| {log_to_save} |\n")
             return False, "file_created"
     except Exception as e:
