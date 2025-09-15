@@ -31,10 +31,23 @@ def get_config(filename="config.json"):
                 "Spam_Phrases": ["I like cats!", "I really love cats", "Cats are the best!", "Cats rule!", "Cats are purrfect!"],
                 "Delay_Seconds": 1,
                 "Debugging": "False",
-                "Multi_Instance": "True"
+                "Multi_Instance": "True",
+                "Logging": "True",
+                "Snitch": "False"
             }))
             sys.exit("Please fill config.json and relaunch the application.")
 
+def save_log(log_to_save):
+    try:
+        with open(log_to_save, 'a') as file:
+            file.write(f"| {log_to_save} |\n")
+            return True, "ok"
+    except FileNotFoundError:
+        with open(log_to_save, 'w') as file:
+            file.write(f"| {log_to_save} |\n")
+            return False, "file_created"
+    except Exception as e:
+        return False, str(e)
 
 def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
     app = App(
@@ -42,7 +55,7 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
             signing_secret=Bot_Signing_Secret,
             )
     @app.command("/spell")
-    def spam_user(ack, respond, command):
+    def spam_user(ack, respond, say, command):
         ack()
         cfg = get_config()
         if cfg["Debugging"] == "True":
@@ -50,8 +63,12 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
         user_slack_id = command.get("text").strip(' ') or "None"
         if user_slack_id == "help":
             respond("So the rundown is you use `/spell <user_slack_id>` and it sends a bunch of messages to the user pretty much it to learn how to configure use `/spset help`!")
+            if cfg["Logging"] == "True":
+                save_log(f"UID: {command["user_id"]}, Used /spell help")
             return
         if command["channel_id"] in cfg["Allowed_Channels"]:
+            if cfg["Logging"] == "True":
+                save_log(f"UID: {command["user_id"]}, Used /spell for spam on {user_slack_id} in channel #{command['channel_id']}")
             if user_slack_id == "None":
                 respond("Whoopsie! Looks like you forgot to specify the slack id :( try again!")
                 return
@@ -82,15 +99,21 @@ def build_app(Bot_API_Key, Bot_Signing_Secret, cfg):
                         break
                 break
             respond(f"{message_number} messages have been sent to {user_slack_id} to hehehe with {len(cfg['Spam_Bot_API_Keys'])} bots!")
+            if cfg["Snitch"] == "True":
+                say(f"<@{command["user_id"]}> used /spell on <@{user_slack_id}> to spam!")
             if command["user_id"] in users:
                 users.remove(command["user_id"])
         else:
+            if cfg["Logging"] == "True":
+                save_log(f"UID: {command['user_id']} Tried using /spell in an invalid channel.")
             respond("Hey! Looks like this isn't a valid channel to use this :(")
 
     @app.command("/spset")
     def spset_user(ack, respond, command):
         ack()
         cfg = get_config()
+        if cfg["Logging"] == "True":
+            save_log(f"{command['user_id']} Tried using /spset with params {command.get("text")}")
         if cfg["Debugging"] == "True":
             respond("Hey there! Since this is in a public channel i blocked this command sorry...")
             return
